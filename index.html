@@ -10,264 +10,391 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito+Sans:opsz,wght@6..12,400;6..12,600;6..12,700&family=JetBrains+Mono:wght@400;600&display=swap">
 <style>
-  /* Layout: a short, quiet single column on the deck's cool-black ground. Colour
-     means payment status and nothing else; purple only for the wordmark. */
+  /* Layout: a slideshow in one fixed stage. Each scroll, key press or swipe moves
+     exactly one slide. Colour is payment status; purple is only the wordmark. */
   :root{
     --ground:#08090B; --surface:#101216; --raised:#171A1F;
     --hairline:#232830; --hairline-soft:#1A1E24; --edge:#2A2F38;
     --text:#F4F5F7; --soft:#C0C4CB; --muted:#8B929E; --faint:#5C636F;
-    --late:#F2564D; --paid:#3FBF87; --due:#E9A23B; --wait:#5B9BF0;
-    --brand:#8B5CF6;
-    --paid-wash:rgba(63,191,135,.13); --due-wash:rgba(233,162,59,.14); --wait-wash:rgba(91,155,240,.12);
-    --brand-wash:rgba(139,92,246,.12);
+    --late:#F2564D; --paid:#3FBF87; --wait:#5B9BF0; --brand:#8B5CF6;
+    --paid-wash:rgba(63,191,135,.14); --late-wash:rgba(242,86,77,.15); --idle-wash:rgba(139,146,158,.12);
+    --wait-wash:rgba(91,155,240,.12); --brand-wash:rgba(139,92,246,.12);
     --sans:"Avenir Next",Avenir,"Nunito Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
     --mono:"JetBrains Mono","SF Mono",ui-monospace,Menlo,Consolas,monospace;
+    --ease:cubic-bezier(.22,.7,.2,1); --dur:.7s;
     color-scheme:dark;
   }
   *{box-sizing:border-box;}
-  html{scroll-behavior:smooth;}
-  @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto;}}
   body{margin:0; background:var(--ground); color:var(--text); font-family:var(--sans);
        font-size:17px; line-height:1.6; -webkit-font-smoothing:antialiased;}
   a{color:inherit;}
   :focus-visible{outline:2px solid var(--brand); outline-offset:3px; border-radius:6px;}
 
-  .wrap{max-width:1080px; margin:0 auto; padding-inline:24px;}
-  @media (max-width:520px){.wrap{padding-inline:18px;}}
-
-  .mark{display:inline-flex; align-items:baseline; letter-spacing:.4px; font-weight:600; text-decoration:none;}
+  .mark{display:inline-flex; align-items:baseline; letter-spacing:.4px; font-weight:600;}
   .mark b{font-weight:600;} .mark b:nth-of-type(n+3){color:var(--brand);}
   .mark .lg{font-size:21px;} .mark .sm{font-size:14px;}
 
-  header.top .wrap{display:flex; align-items:center; justify-content:space-between; gap:16px; padding-block:22px;}
-
-  .btn{display:inline-flex; align-items:center; gap:8px; font:600 15px/1 var(--sans);
-       padding:12px 18px; border-radius:10px; text-decoration:none; border:1px solid transparent; cursor:pointer;}
-  .btn.primary{background:var(--text); color:var(--ground);}
-  .btn.primary:hover{background:#fff;}
-  .btn.ghost{border-color:var(--hairline); color:var(--soft);}
-  .btn.ghost:hover{border-color:var(--edge); color:var(--text);}
-  header .btn{padding:10px 15px; font-size:14px;}
+  header.top{position:fixed; inset:0 0 auto 0; z-index:20; padding-top:env(safe-area-inset-top,0px);}
+  header.top .bar{max-width:1120px; margin:0 auto; padding:18px 24px; display:flex; align-items:center; justify-content:space-between; gap:16px;}
+  .btn{display:inline-flex; align-items:center; font:600 14px/1 var(--sans); padding:10px 15px; border-radius:10px;
+       text-decoration:none; border:none; cursor:pointer; background:var(--text); color:var(--ground);}
+  .btn:hover{background:#fff;}
 
   .eyebrow{font-size:12px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:var(--faint);}
-  h1,h2,h3{margin:0; font-weight:600; text-wrap:balance;}
-  h1{font-size:clamp(42px,6.6vw,76px); line-height:1.02; letter-spacing:-.034em;}
-  h1 .who{color:var(--late);}
-  h2{font-size:clamp(28px,3.8vw,44px); line-height:1.1; letter-spacing:-.024em;}
-  h3{font-size:20px; line-height:1.3; letter-spacing:-.01em;}
-  p{margin:0; color:var(--muted); max-width:58ch;}
-  p.lead{font-size:clamp(18px,1.9vw,21px); line-height:1.55; color:var(--soft);}
-  strong{color:var(--text); font-weight:600;}
+  h1,h2{margin:0; font-weight:600; text-wrap:balance;}
+  h1{font-size:clamp(40px,6vw,72px); line-height:1.02; letter-spacing:-.034em;}
+  h2{font-size:clamp(32px,4.6vw,56px); line-height:1.05; letter-spacing:-.03em;}
+  p{margin:0; color:var(--muted); max-width:46ch;}
+  p.lead{font-size:clamp(17px,1.8vw,20px); line-height:1.55; color:var(--soft);}
+  .red{color:var(--late);} .green{color:var(--paid);}
 
-  section{padding-block:clamp(64px,9vw,112px); border-top:1px solid var(--hairline-soft);}
-  section.hero{border-top:none; padding-block:clamp(32px,6vw,72px) clamp(64px,9vw,112px);}
-
-  .pill{display:inline-flex; align-items:center; gap:7px; font-size:12.5px; font-weight:600;
-        padding:5px 11px; border-radius:999px; white-space:nowrap;}
+  .pill{display:inline-flex; align-items:center; gap:7px; font-size:12.5px; font-weight:600; padding:5px 11px; border-radius:999px; white-space:nowrap;}
   .pill i{width:6px; height:6px; border-radius:50%; background:currentColor;}
   .pill.wait{color:var(--wait); background:var(--wait-wash);}
   .pill.brand{color:#C4B1FB; background:var(--brand-wash);}
+  .pills{display:flex; flex-wrap:wrap; gap:10px;}
 
-  /* Hero */
-  .hero-grid{display:grid; grid-template-columns:1.12fr .88fr; gap:clamp(36px,6vw,72px); align-items:center;}
-  @media (max-width:880px){.hero-grid{grid-template-columns:1fr;}}
-  .hero-grid > *{min-width:0;}
-  .hero-copy{display:flex; flex-direction:column; gap:24px;}
-  .status{display:flex; flex-wrap:wrap; gap:10px;}
-  .ctas{display:flex; flex-wrap:wrap; gap:12px;}
+  /* ---------- Stage ---------- */
+  .show{position:relative;}
+  .stage{max-width:1120px; margin:0 auto; padding:110px 24px 64px;
+         display:grid; grid-template-columns:1fr 1fr; gap:clamp(28px,5vw,72px); align-items:center;}
+  .stage > *{min-width:0;}
+  .texts{display:flex; flex-direction:column; gap:72px;}
+  .scene{display:flex; flex-direction:column; gap:18px;}
+  .stat{display:flex; flex-direction:column; gap:6px; padding-left:18px; border-left:1px solid var(--hairline); margin-top:6px;}
+  .stat .v{font-size:clamp(34px,4vw,48px); line-height:1; font-weight:600; letter-spacing:-.03em; color:var(--late); font-variant-numeric:tabular-nums;}
+  .stat .v small{font-size:.42em; margin-left:5px; letter-spacing:-.01em;}
+  .stat span{font-size:14px; color:var(--muted);} .stat em{font-style:normal; font-size:12px; color:var(--faint);}
 
-  /* A job's payment schedule. The point is the last row. */
-  .sched-wrap{position:relative;}
-  .sched-wrap::before{content:""; position:absolute; inset:-50px -30px; z-index:0; pointer-events:none;
-    background:radial-gradient(closest-side, rgba(139,92,246,.18), rgba(139,92,246,.04) 60%, transparent 85%);}
-  .sched{position:relative; z-index:1; background:var(--surface); border:1px solid var(--hairline);
-         border-radius:16px; padding:20px 22px 22px; box-shadow:0 30px 80px rgba(0,0,0,.6);}
-  .sched-head{display:flex; justify-content:space-between; align-items:baseline; gap:12px; margin-bottom:10px;}
-  .sched-head .t{font-size:15px; font-weight:600;}
-  .sched-head .s{font-size:12.5px; color:var(--faint);}
-  .row{display:grid; grid-template-columns:1fr auto auto; gap:14px; align-items:center;
-       padding:11px 0; border-top:1px solid var(--hairline-soft);}
+  .visual{position:relative; display:grid; place-items:center;}
+  .visual::before{content:""; position:absolute; inset:-14% -10%; z-index:0; pointer-events:none;
+    background:radial-gradient(closest-side, rgba(139,92,246,.2), rgba(139,92,246,.04) 60%, transparent 85%);}
+  .card{grid-area:1/1; position:relative; z-index:1; width:min(430px,100%);
+        background:var(--surface); border:1px solid var(--hairline); border-radius:18px; padding:20px 22px 22px;
+        box-shadow:0 30px 80px rgba(0,0,0,.6);
+        transition:transform var(--dur) var(--ease), opacity var(--dur) var(--ease);}
+  .card-head{display:flex; justify-content:space-between; align-items:baseline; gap:12px; margin-bottom:8px;}
+  .card-head .t{font-size:15px; font-weight:600;} .card-head .s{font-size:12.5px; color:var(--faint);}
+  .row{display:grid; grid-template-columns:1fr auto auto; gap:14px; align-items:center; padding:11px 0; border-top:1px solid var(--hairline-soft);}
   .row .what{font-size:14.5px; color:var(--soft);}
-  .row .amt{font:600 14px/1 var(--mono); font-variant-numeric:tabular-nums; color:var(--text);}
-  .tag{font-size:11.5px; font-weight:700; padding:4px 9px; border-radius:999px; white-space:nowrap;
-       min-width:104px; text-align:center; transition:color .35s ease, background .35s ease;}
-  .tag.paid{color:var(--paid); background:var(--paid-wash);}
-  .tag.due{color:var(--due); background:var(--due-wash);}
-  .row.last{margin-top:4px; padding:12px 12px; border:1px solid var(--hairline); border-radius:11px; background:var(--raised);}
+  .row .amt{font:600 14px/1 var(--mono); font-variant-numeric:tabular-nums;}
+  /* Each status tag holds every label it can show; the row's state picks one and
+     the others slide away, so a change reads as a flip rather than a swap. */
+  .tag{display:grid; min-width:112px; height:23px; border-radius:999px; overflow:hidden;}
+  .tag span{grid-area:1/1; display:grid; place-items:center; padding:0 9px; font-size:11.5px; font-weight:700; white-space:nowrap;
+            transition:opacity .45s var(--ease), transform .45s var(--ease); transition-delay:var(--d,0s);}
+  .tag .idle{color:var(--muted); background:var(--idle-wash);}
+  .tag .paid{color:var(--paid); background:var(--paid-wash); opacity:0; transform:translateY(100%);}
+  .tag .late{color:var(--late); background:var(--late-wash); opacity:0; transform:translateY(100%);}
+  .row[data-s="paid"] .tag .idle, .row[data-s="late"] .tag .idle{opacity:0; transform:translateY(-100%);}
+  .row[data-s="paid"] .tag .paid, .row[data-s="late"] .tag .late{opacity:1; transform:none;}
+  .row[data-s="paid"] .tag .late{opacity:0; transform:translateY(-100%);}
+  .row.last{margin-top:4px; padding:12px; border:1px solid var(--hairline); border-radius:12px; background:var(--raised);
+            transition:border-color .5s ease, box-shadow .5s ease;}
   .row.last .what{color:var(--text); font-weight:600;}
-  @media (max-width:420px){.row{grid-template-columns:1fr auto; } .row .amt{grid-column:2; grid-row:1;} .row .tag{grid-column:1 / -1; justify-self:start;}}
-  .sched-note{position:relative; z-index:1; margin-top:16px; font-size:14px; color:var(--faint); text-align:center;}
+  .row.last[data-s="late"]{border-color:rgba(242,86,77,.5); box-shadow:0 0 0 5px rgba(242,86,77,.08);}
+  .row.last[data-s="paid"]{border-color:rgba(63,191,135,.5); box-shadow:0 0 0 5px rgba(63,191,135,.08);}
 
-  /* Why */
-  .why{display:grid; grid-template-columns:1fr 1fr; gap:clamp(28px,5vw,64px); align-items:end;}
-  @media (max-width:820px){.why{grid-template-columns:1fr;}}
-  .why > *{min-width:0;}
-  .why .copy{display:flex; flex-direction:column; gap:18px;}
-  .big{display:flex; flex-direction:column; gap:10px; padding-left:24px; border-left:1px solid var(--hairline);}
-  .big .v{font-size:clamp(46px,6vw,72px); line-height:1; font-weight:600; letter-spacing:-.035em; color:var(--late);
-          font-variant-numeric:tabular-nums;}
-  .big .v small{font-size:.4em; letter-spacing:-.01em; margin-left:6px;}
-  .big p{font-size:16px;}
-  .src{font-size:12.5px; color:var(--faint);}
+  .co{display:flex; flex-direction:column; gap:14px;}
+  .co .top{display:flex; justify-content:space-between; align-items:flex-start; gap:12px;}
+  .co .name{font-size:18px; font-weight:600; line-height:1.25;} .co .sub{font-size:12.5px; color:var(--faint); margin-top:3px;}
+  .co .badge{font-size:12px; font-weight:700; padding:5px 10px; border-radius:999px; color:var(--paid); background:var(--paid-wash); white-space:nowrap;}
+  .co .line{display:flex; justify-content:space-between; gap:12px; font-size:14px; padding-top:12px; border-top:1px solid var(--hairline-soft);}
+  .co .line span:first-child{color:var(--faint);} .co .line span:last-child{font-weight:600; font-variant-numeric:tabular-nums;}
+  .free{grid-area:1/1; position:relative; z-index:2; align-self:end; justify-self:center;
+        font-size:14px; font-weight:700; padding:10px 18px; border-radius:999px; background:var(--text); color:var(--ground);
+        box-shadow:0 14px 40px rgba(0,0,0,.6); white-space:nowrap; transform:translateY(50%);
+        transition:transform var(--dur) var(--ease), opacity var(--dur) var(--ease);}
 
-  /* What we're building */
-  .promises{display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-top:clamp(32px,4vw,48px);}
-  @media (max-width:820px){.promises{grid-template-columns:1fr;}}
-  .promises > div{background:var(--surface); border:1px solid var(--hairline); border-radius:14px;
-                  padding:24px 24px 26px; display:flex; flex-direction:column; gap:10px; min-width:0;}
-  .promises p{font-size:15.5px; line-height:1.6;}
-
-  /* Contact */
-  .contact{display:grid; grid-template-columns:1.05fr .95fr; gap:clamp(28px,5vw,56px); align-items:center;}
-  @media (max-width:820px){.contact{grid-template-columns:1fr;}}
+  /* ---------- Contact ---------- */
+  .contact{max-width:1120px; margin:0 auto; padding:clamp(72px,10vw,128px) 24px;
+           display:grid; grid-template-columns:1.05fr .95fr; gap:clamp(28px,5vw,56px); align-items:center;}
   .contact > *{min-width:0;}
   .contact .copy{display:flex; flex-direction:column; gap:18px;}
-  .reach{background:var(--surface); border:1px solid var(--hairline); border-radius:16px; padding:24px;
-         display:flex; flex-direction:column; gap:14px;}
-  .addr{display:flex; align-items:center; gap:10px; flex-wrap:wrap; background:var(--raised); border:1px solid var(--hairline);
-        border-radius:12px; padding:12px 12px 12px 16px;}
-  .addr a{font:600 16px/1.3 var(--mono); text-decoration:none; color:var(--text); overflow-wrap:anywhere; flex:1; min-width:0; user-select:all;}
-  .copybtn{font:600 13px/1 var(--sans); color:var(--soft); background:transparent; border:1px solid var(--hairline);
-           border-radius:8px; padding:9px 12px; cursor:pointer;}
-  .copybtn:hover{color:var(--text); border-color:var(--edge);}
-  .copybtn.done{color:var(--paid); border-color:rgba(63,191,135,.4);}
+  .contact h2{font-size:clamp(30px,4vw,48px); line-height:1.08; letter-spacing:-.026em;}
   .who-list{display:flex; flex-direction:column; gap:8px; margin:0; padding:0; list-style:none;}
   .who-list li{font-size:15px; color:var(--soft); display:flex; gap:10px; align-items:baseline;}
   .who-list li::before{content:""; width:6px; height:6px; border-radius:50%; background:var(--faint); flex-shrink:0; transform:translateY(-2px);}
+  .reach{background:var(--surface); border:1px solid var(--hairline); border-radius:16px; padding:24px; display:flex; flex-direction:column; gap:14px;}
+  .addr{display:flex; align-items:center; gap:10px; flex-wrap:wrap; background:var(--raised); border:1px solid var(--hairline); border-radius:12px; padding:12px 12px 12px 16px;}
+  .addr a{font:600 16px/1.3 var(--mono); text-decoration:none; overflow-wrap:anywhere; flex:1; min-width:0; user-select:all;}
+  .copybtn{font:600 13px/1 var(--sans); color:var(--soft); background:transparent; border:1px solid var(--hairline); border-radius:8px; padding:9px 12px; cursor:pointer;}
+  .copybtn:hover{color:var(--text); border-color:var(--edge);}
+  .copybtn.done{color:var(--paid); border-color:rgba(63,191,135,.4);}
+  .foot{grid-column:1/-1; display:flex; justify-content:space-between; gap:16px; flex-wrap:wrap; padding-top:22px;
+        border-top:1px solid var(--hairline-soft); font-size:13.5px; color:var(--faint);}
 
-  footer{border-top:1px solid var(--hairline-soft); padding-block:28px 40px;}
-  footer .wrap{display:flex; justify-content:space-between; align-items:center; gap:16px; flex-wrap:wrap; font-size:13.5px; color:var(--faint);}
+  .dots,.hint{display:none;}
+
+  /* ---------- Slideshow mode, switched on by the script ---------- */
+  .js, .js body{height:100%; overflow:hidden; overscroll-behavior:none;}
+  .js .show{position:fixed; inset:0; touch-action:none;}
+  .js .stage{position:absolute; inset:0; height:100%; padding-block:84px 48px;
+             transition:opacity var(--dur) var(--ease), transform var(--dur) var(--ease);}
+  .js .texts{display:grid; align-items:center;}
+  .js .scene{grid-area:1/1; opacity:0; visibility:hidden; transform:translateY(40px);
+             transition:opacity .55s var(--ease), transform .7s var(--ease), visibility 0s linear .7s;}
+  .js .scene.before{transform:translateY(-40px);}
+  .js .scene.on{opacity:1; visibility:visible; transform:none; transition-delay:.12s,.12s,0s;}
+  .js .co{opacity:0; transform:translateY(48px);}
+  .js .free{opacity:0; transform:translateY(110%);}
+  .js .show[data-i="4"] #sched, .js .show[data-i="5"] #sched{opacity:.14; transform:translateY(-46px) scale(.9);}
+  .js .show[data-i="4"] #co, .js .show[data-i="5"] #co{opacity:1; transform:translateY(34px);}
+  .js .show[data-i="5"] #free{opacity:1; transform:translateY(50%);}
+  .js .contact{position:absolute; inset:0; height:100%; align-content:center; padding-block:84px 32px;
+               opacity:0; visibility:hidden; transform:translateY(40px);
+               transition:opacity .6s var(--ease), transform .7s var(--ease), visibility 0s linear .7s;}
+  .js .show[data-i="6"] .contact{opacity:1; visibility:visible; transform:none; transition-delay:.1s,.1s,0s;}
+  .js .show[data-i="6"] .stage{opacity:0; transform:translateY(-40px); pointer-events:none;}
+
+  .js .dots{display:flex; position:fixed; right:24px; top:50%; transform:translateY(-50%); z-index:15; flex-direction:column; gap:12px;}
+  .dots button{width:9px; height:9px; padding:0; border-radius:50%; border:none; cursor:pointer; background:var(--edge);
+               transition:background .3s ease, transform .3s ease;}
+  .dots button[aria-current="true"]{background:var(--text); transform:scale(1.3);}
+  .js .hint{display:inline-flex; position:fixed; left:50%; bottom:22px; transform:translateX(-50%); z-index:15;
+            align-items:center; gap:10px; font-size:13px; color:var(--faint); transition:opacity .4s ease;}
+  .hint i{width:18px; height:28px; border:1.5px solid var(--edge); border-radius:10px; position:relative;}
+  .hint i::after{content:""; position:absolute; left:50%; top:6px; width:3px; height:6px; margin-left:-1.5px; border-radius:2px;
+                 background:var(--muted); animation:wheel 1.8s ease-in-out infinite;}
+  @keyframes wheel{0%,100%{transform:translateY(0); opacity:1;} 60%{transform:translateY(8px); opacity:0;}}
+  .js .show:not([data-i="0"]) ~ .hint{opacity:0;}
+
+  @media (max-width:820px){
+    header.top .bar{padding:14px 18px;} .mark .lg{font-size:19px;} .mark .sm{font-size:12.5px;}
+    .btn{padding:9px 13px; font-size:13px;}
+    .stage{grid-template-columns:1fr; gap:22px; padding-inline:18px;}
+    .visual{order:-1;}
+    .js .stage{padding-block:66px 44px; align-content:center;}
+    .scene{gap:12px;}
+    .card{padding:12px 14px 14px; border-radius:14px;}
+    .card-head{margin-bottom:2px;} .card-head .t{font-size:14px;}
+    .row{padding:7px 0; gap:10px;} .row .what{font-size:13px;} .row .amt{font-size:12.5px;}
+    .row.last{padding:9px 10px;}
+    .tag{min-width:94px; height:21px;} .tag span{font-size:10.5px;}
+    .co{gap:10px;} .co .name{font-size:16px;} .co .line{font-size:13px; padding-top:9px;}
+    .free{font-size:13px; padding:8px 15px;}
+    h1{font-size:clamp(30px,8.4vw,44px);} h2{font-size:clamp(26px,7.6vw,38px);}
+    p.lead{font-size:15.5px; line-height:1.5;}
+    .stat{gap:4px; padding-left:14px;} .stat .v{font-size:30px;} .stat span{display:none;}
+    .pill{font-size:11.5px; padding:4px 10px;}
+    .contact{grid-template-columns:1fr; padding-inline:18px;}
+    .js .contact{padding-block:66px 44px; gap:18px;}
+    .contact .copy{gap:12px;} .contact h2{font-size:clamp(26px,7.2vw,34px);}
+    .who-list{gap:6px;} .who-list li{font-size:14px;}
+    .reach{padding:16px; gap:10px;} .addr a{font-size:14px;}
+    .foot{padding-top:14px; font-size:12.5px;}
+    .js .dots{top:auto; bottom:16px; right:auto; left:50%; transform:translateX(-50%); flex-direction:row;}
+    .js .hint{display:none;}
+  }
+  .js .stage > *{zoom:var(--zs,1);} .js .contact > *{zoom:var(--zc,1);}
+  @media (prefers-reduced-motion:reduce){
+    :root{--dur:.01s;}
+    .js .scene,.js .scene.before,.js .contact,.js .stage{transform:none !important;}
+    .tag span{transition-duration:.01s;} .hint i::after{animation:none;}
+  }
 </style>
 </head>
 <body>
+<script>document.documentElement.classList.add('js');</script>
+
 <header class="top">
-  <div class="wrap">
+  <div class="bar">
     <span class="mark" aria-label="UnOwed"><b class="lg">U</b><b class="sm">N</b><b class="lg">O</b><b class="sm">WED</b></span>
-    <a class="btn primary" href="#contact">Contact us</a>
+    <a class="btn" href="#contact" id="contactBtn">Contact us</a>
   </div>
 </header>
 
-<main>
-
-  <section class="hero">
-    <div class="wrap hero-grid">
-      <div class="hero-copy">
-        <div class="status">
-          <span class="pill wait"><i></i>Coming soon</span>
-          <span class="pill brand"><i></i>Raising pre-seed</span>
-        </div>
-        <h1>Paid on time, every time. <span class="who">And a record of who doesn't.</span></h1>
-        <p class="lead">Freelancers do the work. Getting paid shouldn't be the hard part.
-          We're building the app that makes sure the money arrives, on the date everyone agreed.</p>
-        <div class="ctas">
-          <a class="btn primary" href="#contact">Talk to us</a>
-        </div>
+<main class="show" id="show" data-i="0">
+  <div class="stage">
+    <div class="texts">
+      <div class="scene on">
+        <div class="pills"><span class="pill wait"><i></i>Coming soon</span><span class="pill brand"><i></i>Raising pre-seed</span></div>
+        <h1>Paid on time, every time. <span class="red">And a record of who doesn't.</span></h1>
+        <p class="lead">Freelancers do the work. Getting paid shouldn't be the hard part.</p>
       </div>
-
-      <div class="sched-wrap">
-        <div class="sched" aria-label="A freelance job paid in five instalments. The first four are paid. The final payment is paid on time.">
-          <div class="sched-head"><span class="t">Brand film</span><span class="s">5 payments</span></div>
-          <div class="row"><span class="what">Advance</span><span class="amt">₹1,00,000</span><span class="tag paid">Paid</span></div>
-          <div class="row"><span class="what">Payment 2</span><span class="amt">₹3,00,000</span><span class="tag paid">Paid</span></div>
-          <div class="row"><span class="what">Payment 3</span><span class="amt">₹3,00,000</span><span class="tag paid">Paid</span></div>
-          <div class="row"><span class="what">Payment 4</span><span class="amt">₹2,00,000</span><span class="tag paid">Paid</span></div>
-          <div class="row last"><span class="what">Final payment</span><span class="amt">₹1,00,000</span>
-            <span class="tag paid" id="final">Paid on time</span></div>
-        </div>
-        <p class="sched-note">The last payment is the one that goes missing. Not anymore.</p>
+      <div class="scene">
+        <div class="eyebrow">Every job</div>
+        <h2>The work gets delivered.</h2>
+        <p class="lead">An advance, then payment after payment as the work goes in. So far, so good.</p>
       </div>
-    </div>
-  </section>
-
-  <section>
-    <div class="wrap why">
-      <div class="copy">
-        <div class="eyebrow">Why we're building it</div>
-        <h2>The work gets delivered. The last payment doesn't.</h2>
-        <p class="lead">Once the work is handed over, a freelancer has nothing left to hold on to.
-          So they wait, follow up, and wait again. And there's no way to know in advance which
-          clients will do it.</p>
+      <div class="scene">
+        <div class="eyebrow">Then</div>
+        <h2 class="red">The last payment doesn't.</h2>
+        <p class="lead">Once the work is handed over, a freelancer has nothing left to hold on to. So they wait, follow up, and wait again.</p>
+        <div class="stat"><div class="v">₹7.34<small>lakh crore</small></div>
+          <span>owed late to India's micro and small businesses, most freelancers among them.</span>
+          <em>GAME and FISME report</em></div>
       </div>
-      <div class="big">
-        <div class="v">₹7.34<small>lakh crore</small></div>
-        <p>owed late to India's micro and small businesses, most freelancers among them.</p>
-        <span class="src">GAME and FISME report</span>
+      <div class="scene">
+        <div class="eyebrow">What we're building</div>
+        <h2>An app that makes sure it <span class="green">arrives.</span></h2>
+        <p class="lead">On the date everyone agreed. No reminders to write, no follow-ups, no awkward calls.</p>
+      </div>
+      <div class="scene">
+        <div class="eyebrow">Before you sign</div>
+        <h2>Know who pays before you say yes.</h2>
+        <p class="lead">See how a company has treated other freelancers before you take the job.</p>
+      </div>
+      <div class="scene">
+        <div class="eyebrow">For freelancers</div>
+        <h2>Free. Always.</h2>
+        <p class="lead">For anyone who has ever had to ask twice for money they already earned.</p>
       </div>
     </div>
-  </section>
 
-  <section>
-    <div class="wrap">
-      <div class="eyebrow">What we're building</div>
-      <h2 style="margin-top:16px; max-width:20ch;">One app, so freelancers never chase a payment again.</h2>
-      <div class="promises">
-        <div><h3>Paid on the date you agreed.</h3>
-          <p>No reminders to write, no follow-ups, no awkward calls. The money arrives when it was meant to.</p></div>
-        <div><h3>Know who pays before you say yes.</h3>
-          <p>See how a company has treated other freelancers before you take the job.</p></div>
-        <div><h3>Free for freelancers. Always.</h3>
-          <p>For anyone who has ever had to ask twice for money they already earned.</p></div>
+    <div class="visual" aria-hidden="true">
+      <div class="card" id="sched">
+        <div class="card-head"><span class="t">Brand film</span><span class="s">5 payments</span></div>
+        <div class="row"><span class="what">Advance</span><span class="amt">₹1,00,000</span><span class="tag"><span class="idle">Upcoming</span><span class="paid">Paid</span></span></div>
+        <div class="row"><span class="what">Payment 2</span><span class="amt">₹3,00,000</span><span class="tag"><span class="idle">Upcoming</span><span class="paid">Paid</span></span></div>
+        <div class="row"><span class="what">Payment 3</span><span class="amt">₹3,00,000</span><span class="tag"><span class="idle">Upcoming</span><span class="paid">Paid</span></span></div>
+        <div class="row"><span class="what">Payment 4</span><span class="amt">₹2,00,000</span><span class="tag"><span class="idle">Upcoming</span><span class="paid">Paid</span></span></div>
+        <div class="row last"><span class="what">Final payment</span><span class="amt">₹1,00,000</span><span class="tag"><span class="idle">Upcoming</span><span class="late">60 days late</span><span class="paid">Paid on time</span></span></div>
       </div>
-    </div>
-  </section>
-
-  <section id="contact">
-    <div class="wrap contact">
-      <div class="copy">
-        <div class="eyebrow">Coming soon</div>
-        <h2>We're building it now, and raising our pre-seed round.</h2>
-        <p class="lead">Launching first in India, starting with film. We'd like to hear from:</p>
-        <ul class="who-list">
-          <li>Investors backing fintech for independent workers</li>
-          <li>Freelancers who are tired of chasing payments</li>
-          <li>Agencies and production houses who work with them</li>
-        </ul>
-      </div>
-      <div class="reach">
-        <div class="eyebrow">Talk to us</div>
-        <div class="addr">
-          <a id="email" href="mailto:karangour@unowed.app">karangour@unowed.app</a>
-          <button class="copybtn" id="copy" type="button">Copy</button>
+      <div class="card co" id="co">
+        <div class="top">
+          <div><div class="name">Kestrel Pictures Pvt Ltd</div><div class="sub">Mumbai · example</div></div>
+          <span class="badge">Pays on time</span>
         </div>
+        <div class="line"><span>Usually pays within</span><span>9 days</span></div>
+        <div class="line"><span>Freelancers paid</span><span>17</span></div>
       </div>
+      <div class="free" id="free">₹0 for freelancers</div>
     </div>
-  </section>
-
-</main>
-
-<footer>
-  <div class="wrap">
-    <span class="mark" aria-label="UnOwed"><b class="lg" style="font-size:17px;">U</b><b class="sm" style="font-size:11.5px;">N</b><b class="lg" style="font-size:17px;">O</b><b class="sm" style="font-size:11.5px;">WED</b></span>
-    <span>© 2026 UnOwed · unowed.app</span>
   </div>
-</footer>
+
+  <section class="contact" id="contact">
+    <div class="copy">
+      <div class="eyebrow">Coming soon</div>
+      <h2>We're building it now, and raising our pre-seed round.</h2>
+      <p class="lead">Launching first in India, starting with film. We'd like to hear from:</p>
+      <ul class="who-list">
+        <li>Investors backing fintech for independent workers</li>
+        <li>Freelancers who are tired of chasing payments</li>
+        <li>Agencies and production houses who work with them</li>
+      </ul>
+    </div>
+    <div class="reach">
+      <div class="eyebrow">Talk to us</div>
+      <div class="addr">
+        <a id="email" href="mailto:karangour@unowed.app">karangour@unowed.app</a>
+        <button class="copybtn" id="copy" type="button">Copy</button>
+      </div>
+    </div>
+    <div class="foot"><span>© 2026 UnOwed</span><span>unowed.app</span></div>
+  </section>
+</main>
+<nav class="dots" id="dots" aria-label="Slides"></nav>
+<span class="hint" aria-hidden="true"><i></i>Scroll</span>
 
 <script>
-  (function () {
-    var btn = document.getElementById('copy');
-    var link = document.getElementById('email');
-    var addr = link.textContent.trim();
-    function selectAddress() {
-      var r = document.createRange(); r.selectNodeContents(link);
-      var s = window.getSelection(); s.removeAllRanges(); s.addRange(r);
-    }
-    btn.addEventListener('click', function () {
-      function done(label) { btn.textContent = label; btn.classList.add('done');
-        setTimeout(function () { btn.textContent = 'Copy'; btn.classList.remove('done'); }, 1800); }
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(addr).then(function () { done('Copied'); },
-          function () { selectAddress(); done('Selected'); });
-      } else { selectAddress(); done('Selected'); }
-    });
+(function () {
+  var show = document.getElementById('show');
+  var scenes = [].slice.call(document.querySelectorAll('.scene'));
+  var rows = [].slice.call(document.querySelectorAll('#sched .row'));
+  var dotsNav = document.getElementById('dots');
+  var COUNT = scenes.length + 1;            // six story slides, then contact
+  var i = 0;
 
-    // The final payment starts as due, then turns paid. Readers who prefer
-    // less motion see the finished state straight away.
-    if (window.matchMedia && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      var tag = document.getElementById('final');
-      tag.className = 'tag due'; tag.textContent = 'Due';
-      setTimeout(function () { tag.className = 'tag paid'; tag.textContent = 'Paid on time'; }, 1600);
-    }
-  })();
+  var dots = [];
+  for (var k = 0; k < COUNT; k++) (function (n) {
+    var b = document.createElement('button'); b.type = 'button';
+    b.setAttribute('aria-label', n === COUNT - 1 ? 'Contact' : 'Slide ' + (n + 1));
+    b.addEventListener('click', function () { go(n); });
+    dotsNav.appendChild(b); dots.push(b);
+  })(k);
+
+  function setRow(row, state, delay) {
+    row.setAttribute('data-s', state);
+    [].forEach.call(row.querySelectorAll('.tag span'), function (s) { s.style.setProperty('--d', delay + 's'); });
+  }
+
+  function render(dir) {
+    show.setAttribute('data-i', i);
+    scenes.forEach(function (el, n) {
+      el.classList.toggle('on', n === i);
+      el.classList.toggle('before', n < i);
+    });
+    // Payments 1 to 4 tick over one after another on the second slide.
+    for (var r = 0; r < 4; r++) setRow(rows[r], i >= 1 ? 'paid' : 'idle', dir > 0 && i === 1 ? 0.25 + r * 0.16 : 0);
+    setRow(rows[4], i <= 1 ? 'idle' : i === 2 ? 'late' : 'paid', dir > 0 && (i === 2 || i === 3) ? 0.3 : 0);
+    dots.forEach(function (b, n) { b.setAttribute('aria-current', n === i ? 'true' : 'false'); });
+  }
+
+  var busyUntil = 0;
+  function go(n) {
+    n = Math.max(0, Math.min(COUNT - 1, n));
+    if (n === i) return;
+    var dir = n > i ? 1 : -1; i = n; render(dir);
+    busyUntil = Date.now() + 750;
+  }
+
+  // One gesture, one slide. A trackpad flick sends a long burst of wheel events
+  // with momentum: the first event of a burst moves one slide, and everything
+  // after it is ignored until the wheel has been still for a moment.
+  var lastWheel = 0;
+  window.addEventListener('wheel', function (e) {
+    e.preventDefault();
+    var now = Date.now(), gap = now - lastWheel;
+    lastWheel = now;
+    if (e.deltaY === 0 || gap < 220 || now < busyUntil) return;
+    go(i + (e.deltaY > 0 ? 1 : -1));
+  }, { passive: false });
+
+  window.addEventListener('keydown', function (e) {
+    var next = ['ArrowDown', 'PageDown', ' ', 'ArrowRight'], prev = ['ArrowUp', 'PageUp', 'ArrowLeft'];
+    if (e.target && e.target.tagName === 'BUTTON' && e.key === ' ') return;
+    if (next.indexOf(e.key) > -1) { e.preventDefault(); go(i + 1); }
+    else if (prev.indexOf(e.key) > -1) { e.preventDefault(); go(i - 1); }
+    else if (e.key === 'Home') { e.preventDefault(); go(0); }
+    else if (e.key === 'End') { e.preventDefault(); go(COUNT - 1); }
+  });
+
+  var y0 = null;
+  window.addEventListener('touchstart', function (e) { y0 = e.touches[0].clientY; }, { passive: true });
+  window.addEventListener('touchend', function (e) {
+    if (y0 === null) return;
+    var dy = y0 - e.changedTouches[0].clientY; y0 = null;
+    if (Math.abs(dy) > 36) go(i + (dy > 0 ? 1 : -1));
+  }, { passive: true });
+
+  document.getElementById('contactBtn').addEventListener('click', function (e) { e.preventDefault(); go(COUNT - 1); });
+
+  render(0);
+
+  // Phones vary a lot in height once the browser's own bars are counted. If a
+  // slide is taller than the space it has, shrink it until it fits, never grow.
+  var stage = document.querySelector('.stage'), texts = document.querySelector('.texts'),
+      visual = document.querySelector('.visual'), contact = document.getElementById('contact');
+  function room(el) { var cs = getComputedStyle(el);
+    return el.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom); }
+  function fit() {
+    var root = document.documentElement;
+    root.style.setProperty('--zs', 1); root.style.setProperty('--zc', 1);
+    var stacked = getComputedStyle(stage).gridTemplateColumns.split(' ').length === 1;
+    var gap = parseFloat(getComputedStyle(stage).rowGap) || 0;
+    var need = stacked ? texts.offsetHeight + visual.offsetHeight + gap : Math.max(texts.offsetHeight, visual.offsetHeight + 40);
+    root.style.setProperty('--zs', Math.min(1, room(stage) / need).toFixed(3));
+    var kids = [].slice.call(contact.children), cg = parseFloat(getComputedStyle(contact).rowGap) || 0;
+    var cneed = kids.reduce(function (a, k) { return a + k.offsetHeight; }, 0) + cg * (kids.length - 1);
+    if (!stacked) cneed = contact.scrollHeight - parseFloat(getComputedStyle(contact).paddingTop) - parseFloat(getComputedStyle(contact).paddingBottom);
+    root.style.setProperty('--zc', Math.min(1, room(contact) / cneed).toFixed(3));
+  }
+  fit();
+  window.addEventListener('resize', fit);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(fit);
+
+  var btn = document.getElementById('copy'), link = document.getElementById('email');
+  btn.addEventListener('click', function () {
+    function done(label) { btn.textContent = label; btn.classList.add('done');
+      setTimeout(function () { btn.textContent = 'Copy'; btn.classList.remove('done'); }, 1800); }
+    function select() { var rg = document.createRange(); rg.selectNodeContents(link);
+      var sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(rg); }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(link.textContent.trim()).then(function () { done('Copied'); }, function () { select(); done('Selected'); });
+    } else { select(); done('Selected'); }
+  });
+})();
 </script>
 </body>
 </html>
