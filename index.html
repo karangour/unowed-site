@@ -101,9 +101,9 @@
   .co .badge{font-size:12px; font-weight:700; padding:5px 10px; border-radius:999px; color:var(--paid); background:var(--paid-wash); white-space:nowrap;}
   .co .line{display:flex; justify-content:space-between; gap:12px; font-size:14px; padding-top:12px; border-top:1px solid var(--hairline-soft);}
   .co .line span:first-child{color:var(--faint);} .co .line span:last-child{font-weight:600; font-variant-numeric:tabular-nums;}
-  .free{grid-area:1/1; position:relative; z-index:2; align-self:end; justify-self:center;
+  .free{position:absolute; left:50%; top:calc(100% + 16px); z-index:2;
         font-size:14px; font-weight:700; padding:10px 18px; border-radius:999px; background:var(--text); color:var(--ground);
-        box-shadow:0 14px 40px rgba(0,0,0,.6); white-space:nowrap; transform:translateY(50%);
+        box-shadow:0 14px 40px rgba(0,0,0,.6); white-space:nowrap; transform:translateX(-50%);
         transition:transform var(--dur) var(--ease), opacity var(--dur) var(--ease);}
 
   /* ---------- Contact ---------- */
@@ -137,10 +137,10 @@
   .js .scene.before{transform:translateY(-40px);}
   .js .scene.on{opacity:1; visibility:visible; transform:none; transition-delay:.12s,.12s,0s;}
   .js .co{opacity:0; transform:translateY(48px);}
-  .js .free{opacity:0; transform:translateY(110%);}
+  .js .free{opacity:0; transform:translate(-50%,14px);}
   .js .show[data-i="4"] #sched, .js .show[data-i="5"] #sched{opacity:.14; transform:translateY(-46px) scale(.9);}
   .js .show[data-i="4"] #co, .js .show[data-i="5"] #co{opacity:1; transform:translateY(34px);}
-  .js .show[data-i="5"] #free{opacity:1; transform:translateY(50%);}
+  .js .show[data-i="5"] #free{opacity:1; transform:translate(-50%,0);}
   .js .contact{position:absolute; inset:0; height:100%; align-content:center; padding-block:84px 32px;
                opacity:0; visibility:hidden; transform:translateY(40px);
                transition:opacity .6s var(--ease), transform .7s var(--ease), visibility 0s linear .7s;}
@@ -172,7 +172,8 @@
     .row.last{padding:9px 10px;}
     .tag{min-width:94px; height:21px;} .tag span{font-size:10.5px;}
     .co{gap:10px;} .co .name{font-size:16px;} .co .line{font-size:13px; padding-top:9px;}
-    .free{font-size:13px; padding:8px 15px;}
+    .free{font-size:13px; padding:8px 15px; top:calc(100% + 12px);}
+    .js .show[data-i="4"] #co, .js .show[data-i="5"] #co{transform:translateY(-10px);}
     h1{font-size:clamp(30px,8.4vw,44px);} h2{font-size:clamp(26px,7.6vw,38px);}
     p.lead{font-size:15.5px; line-height:1.5;}
     .stat{gap:4px; padding-left:14px;} .stat .v{font-size:30px;} .stat span{display:none;}
@@ -258,8 +259,8 @@
         </div>
         <div class="line"><span>Usually pays within</span><span>9 days</span></div>
         <div class="line"><span>Freelancers paid</span><span>17</span></div>
+        <div class="free" id="free">₹0 for freelancers</div>
       </div>
-      <div class="free" id="free">₹0 for freelancers</div>
     </div>
   </div>
 
